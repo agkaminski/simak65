@@ -1,3 +1,7 @@
+/* SimAK65 instruction execution
+ * Copyright A.K. 2018, 2023
+ */
+
 #include "error.h"
 #include "bus.h"
 #include "exec.h"

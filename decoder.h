@@ -1,3 +1,7 @@
+/* SimAK65 instruction decoder
+ * Copyright A.K. 2018, 2023
+ */
+
 #ifndef SIMAK65_DECODER_H_
 #define SIMAK65_DECODER_H_
 

@@ -1,3 +1,7 @@
+/* SimAK65 internal types
+ * Copyright A.K. 2018, 2023
+ */
+
 #ifndef SIMAK65_TYPES_H_
 #define SIMAK65_TYPES_H_
 

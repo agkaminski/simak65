@@ -1,3 +1,7 @@
+/* SimAK65 arithmetic-logic unit
+ * Copyright A.K. 2018, 2023
+ */
+
 #include "error.h"
 #include "alu.h"
 #include "flags.h"

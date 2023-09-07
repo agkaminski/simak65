@@ -1,3 +1,7 @@
+/* SimAK65 memory access
+ * Copyright A.K. 2018, 2023
+ */
+
 #ifndef SIMAK65_BUS_H_
 #define SIMAK65_BUS_H_
 

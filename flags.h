@@ -1,3 +1,7 @@
+/* SimAK65 CPU flags
+ * Copyright A.K. 2018, 2023
+ */
+
 #ifndef SIMAK65_FLAGS_H_
 #define SIMAK65_FLAGS_H_
 

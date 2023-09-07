@@ -1,3 +1,7 @@
+/* SimAK65 instruction execution
+ * Copyright A.K. 2018, 2023
+ */
+
 #ifndef SIMAK65_EXEC_H_
 #define SIMAK65_EXEC_H_
 

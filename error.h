@@ -1,3 +1,7 @@
+/* SimAK65 debug
+ * Copyright A.K. 2018, 2023
+ */
+
 #ifndef SIMAK65_ERROR_H_
 #define SIMAK65_ERROR_H_
 

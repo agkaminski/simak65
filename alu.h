@@ -1,3 +1,7 @@
+/* SimAK65 arithmetic-logic unit
+ * Copyright A.K. 2018, 2023
+ */
+
 #ifndef SIMAK65_ALU_H_
 #define SIMAK65_ALU_H_
 

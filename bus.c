@@ -1,3 +1,7 @@
+/* SimAK65 memory access
+ * Copyright A.K. 2018, 2023
+ */
+
 #include "simak65.h"
 #include "bus.h"
 

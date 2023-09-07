@@ -1,3 +1,7 @@
+/* SimAK65 instruction decoder
+ * Copyright A.K. 2018, 2023
+ */
+
 #include "error.h"
 #include "decoder.h"
 

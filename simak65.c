@@ -1,3 +1,7 @@
+/* SimAK65 interface
+ * Copyright A.K. 2018, 2023
+ */
+
 #include <stddef.h>
 #include "simak65.h"
 #include "decoder.h"
