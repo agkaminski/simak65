@@ -11,6 +11,8 @@
 
 static enum argtype modeAcc(struct simak65_cpustate *cpu, u8 *args, unsigned int *cycles)
 {
+	(void)cycles;
+
 	args[0] = cpu->a;
 
 	DEBUG("Accumulator mode, args : 0x%02x", args[0]);
@@ -79,6 +81,10 @@ static enum argtype modeImmediate(struct simak65_cpustate *cpu, u8 *args, unsign
 
 static enum argtype modeImplicant(struct simak65_cpustate *cpu, u8 *args, unsigned int *cycles)
 {
+	(void)cpu;
+	(void)args;
+	(void)cycles;
+
 	DEBUG("Implicant mode, no args");
 
 	return arg_none;

@@ -117,6 +117,8 @@ static void exec_asl(struct simak65_cpustate *cpu, enum argtype argtype, u8 *arg
 
 static void exec_bcc(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
+	(void)argtype;
+
 	u16 addr;
 
 	addr = (args[1] << 8) | args[0];
@@ -137,6 +139,8 @@ static void exec_bcc(struct simak65_cpustate *cpu, enum argtype argtype, u8 *arg
 
 static void exec_bcs(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
+	(void)argtype;
+
 	u16 addr;
 
 	addr = (args[1] << 8) | args[0];
@@ -157,6 +161,8 @@ static void exec_bcs(struct simak65_cpustate *cpu, enum argtype argtype, u8 *arg
 
 static void exec_beq(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
+	(void)argtype;
+
 	u16 addr;
 
 	addr = (args[1] << 8) | args[0];
@@ -197,6 +203,8 @@ static void exec_bit(struct simak65_cpustate *cpu, enum argtype argtype, u8 *arg
 
 static void exec_bmi(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
+	(void)argtype;
+
 	u16 addr;
 
 	addr = (args[1] << 8) | args[0];
@@ -217,6 +225,8 @@ static void exec_bmi(struct simak65_cpustate *cpu, enum argtype argtype, u8 *arg
 
 static void exec_bne(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
+	(void)argtype;
+
 	u16 addr;
 
 	addr = (args[1] << 8) | args[0];
@@ -237,6 +247,8 @@ static void exec_bne(struct simak65_cpustate *cpu, enum argtype argtype, u8 *arg
 
 static void exec_bpl(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
+	(void)argtype;
+
 	u16 addr;
 
 	addr = (args[1] << 8) | args[0];
@@ -257,6 +269,9 @@ static void exec_bpl(struct simak65_cpustate *cpu, enum argtype argtype, u8 *arg
 
 static void exec_brk(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
+	(void)argtype;
+	(void)args;
+
 	u8 flags;
 	u16 addr;
 
@@ -282,6 +297,8 @@ static void exec_brk(struct simak65_cpustate *cpu, enum argtype argtype, u8 *arg
 
 static void exec_bvc(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
+	(void)argtype;
+
 	u16 addr;
 
 	addr = (args[1] << 8) | args[0];
@@ -302,6 +319,8 @@ static void exec_bvc(struct simak65_cpustate *cpu, enum argtype argtype, u8 *arg
 
 static void exec_bvs(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
+	(void)argtype;
+
 	u16 addr;
 
 	addr = (args[1] << 8) | args[0];
@@ -322,6 +341,10 @@ static void exec_bvs(struct simak65_cpustate *cpu, enum argtype argtype, u8 *arg
 
 static void exec_clc(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
+	(void)argtype;
+	(void)args;
+
+
 	cpu->flags &= ~FLAG_CARRY;
 
 	DEBUG("Performing CLC");
@@ -331,6 +354,9 @@ static void exec_clc(struct simak65_cpustate *cpu, enum argtype argtype, u8 *arg
 
 static void exec_cld(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
+	(void)argtype;
+	(void)args;
+
 	cpu->flags &= ~FLAG_BCD;
 
 	DEBUG("Performing CLD");
@@ -340,6 +366,9 @@ static void exec_cld(struct simak65_cpustate *cpu, enum argtype argtype, u8 *arg
 
 static void exec_cli(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
+	(void)argtype;
+	(void)args;
+
 	cpu->flags &= ~FLAG_IRQD;
 
 	DEBUG("Performing CLI");
@@ -349,6 +378,9 @@ static void exec_cli(struct simak65_cpustate *cpu, enum argtype argtype, u8 *arg
 
 static void exec_clv(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
+	(void)argtype;
+	(void)args;
+
 	cpu->flags &= ~FLAG_OVRF;
 
 	DEBUG("Performing CLV");
@@ -447,6 +479,9 @@ static void exec_dec(struct simak65_cpustate *cpu, enum argtype argtype, u8 *arg
 
 static void exec_dex(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
+	(void)argtype;
+	(void)args;
+
 	cpu->x = alu_dec(cpu->x, 0, &cpu->flags);
 
 	DEBUG("Performing DEX, result 0x%02x", cpu->x);
@@ -456,6 +491,9 @@ static void exec_dex(struct simak65_cpustate *cpu, enum argtype argtype, u8 *arg
 
 static void exec_dey(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
+	(void)argtype;
+	(void)args;
+
 	cpu->y = alu_dec(cpu->y, 0, &cpu->flags);
 
 	DEBUG("Performing DEY, result 0x%02x", cpu->y);
@@ -514,6 +552,9 @@ static void exec_inc(struct simak65_cpustate *cpu, enum argtype argtype, u8 *arg
 
 static void exec_inx(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
+	(void)argtype;
+	(void)args;
+
 	cpu->x = alu_inc(cpu->x, 0, &cpu->flags);
 
 	DEBUG("Performing INX, result 0x%02x", cpu->x);
@@ -523,6 +564,9 @@ static void exec_inx(struct simak65_cpustate *cpu, enum argtype argtype, u8 *arg
 
 static void exec_iny(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
+	(void)argtype;
+	(void)args;
+
 	cpu->y = alu_inc(cpu->y, 0, &cpu->flags);
 
 	DEBUG("Performing INY, result 0x%02x", cpu->y);
@@ -532,6 +576,8 @@ static void exec_iny(struct simak65_cpustate *cpu, enum argtype argtype, u8 *arg
 
 static void exec_jmp(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
+	(void)argtype;
+
 	u16 addr;
 
 	addr = (args[1] << 8) | args[0];
@@ -545,6 +591,8 @@ static void exec_jmp(struct simak65_cpustate *cpu, enum argtype argtype, u8 *arg
 
 static void exec_jsr(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
+	(void)argtype;
+
 	u16 addr;
 
 	addr = cpu->pc - 1;
@@ -652,6 +700,10 @@ static void exec_lsr(struct simak65_cpustate *cpu, enum argtype argtype, u8 *arg
 
 static void exec_nop(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
+	(void)cpu;
+	(void)argtype;
+	(void)args;
+
 	*cycles += 1;
 }
 
@@ -677,6 +729,9 @@ static void exec_ora(struct simak65_cpustate *cpu, enum argtype argtype, u8 *arg
 
 static void exec_pha(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
+	(void)argtype;
+	(void)args;
+
 	exec_push(cpu, cpu->a);
 
 	DEBUG("Performing PHA");
@@ -686,6 +741,9 @@ static void exec_pha(struct simak65_cpustate *cpu, enum argtype argtype, u8 *arg
 
 static void exec_php(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
+	(void)argtype;
+	(void)args;
+
 	u8 flags;
 
 	flags = cpu->flags;
@@ -700,6 +758,9 @@ static void exec_php(struct simak65_cpustate *cpu, enum argtype argtype, u8 *arg
 
 static void exec_pla(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
+	(void)argtype;
+	(void)args;
+
 	cpu->a = alu_load(exec_pop(cpu), 0, &cpu->flags);
 
 	DEBUG("Performing PLA");
@@ -709,6 +770,9 @@ static void exec_pla(struct simak65_cpustate *cpu, enum argtype argtype, u8 *arg
 
 static void exec_plp(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
+	(void)argtype;
+	(void)args;
+
 	cpu->flags = exec_pop(cpu);
 	cpu->flags &= FLAG_CARRY | FLAG_ZERO | FLAG_IRQD | FLAG_BCD | FLAG_OVRF | FLAG_SIGN;
 
@@ -777,6 +841,9 @@ static void exec_ror(struct simak65_cpustate *cpu, enum argtype argtype, u8 *arg
 
 static void exec_rti(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
+	(void)argtype;
+	(void)args;
+
 	u16 addr;
 
 	cpu->flags = exec_pop(cpu);
@@ -794,6 +861,9 @@ static void exec_rti(struct simak65_cpustate *cpu, enum argtype argtype, u8 *arg
 
 static void exec_rts(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
+	(void)argtype;
+	(void)args;
+
 	u16 addr;
 
 	addr = exec_pop(cpu);
@@ -829,6 +899,9 @@ static void exec_sbc(struct simak65_cpustate *cpu, enum argtype argtype, u8 *arg
 
 static void exec_sec(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
+	(void)argtype;
+	(void)args;
+
 	cpu->flags |= FLAG_CARRY;
 
 	DEBUG("Executing SEC");
@@ -838,6 +911,9 @@ static void exec_sec(struct simak65_cpustate *cpu, enum argtype argtype, u8 *arg
 
 static void exec_sed(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
+	(void)argtype;
+	(void)args;
+
 	cpu->flags |= FLAG_BCD;
 
 	DEBUG("Executing SED");
@@ -847,6 +923,9 @@ static void exec_sed(struct simak65_cpustate *cpu, enum argtype argtype, u8 *arg
 
 static void exec_sei(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
+	(void)argtype;
+	(void)args;
+
 	cpu->flags |= FLAG_IRQD;
 
 	DEBUG("Executing SEI");
@@ -904,6 +983,9 @@ static void exec_sty(struct simak65_cpustate *cpu, enum argtype argtype, u8 *arg
 
 static void exec_tax(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
+	(void)argtype;
+	(void)args;
+
 	cpu->x = alu_load(cpu->a, 0, &cpu->flags);
 
 	DEBUG("Executing TAX");
@@ -913,6 +995,9 @@ static void exec_tax(struct simak65_cpustate *cpu, enum argtype argtype, u8 *arg
 
 static void exec_tay(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
+	(void)argtype;
+	(void)args;
+
 	cpu->y = alu_load(cpu->a, 0, &cpu->flags);
 
 	DEBUG("Executing TAY");
@@ -922,6 +1007,9 @@ static void exec_tay(struct simak65_cpustate *cpu, enum argtype argtype, u8 *arg
 
 static void exec_tsx(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
+	(void)argtype;
+	(void)args;
+
 	cpu->x = alu_load(cpu->sp, 0, &cpu->flags);
 
 	DEBUG("Executing TSX");
@@ -931,6 +1019,9 @@ static void exec_tsx(struct simak65_cpustate *cpu, enum argtype argtype, u8 *arg
 
 static void exec_txa(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
+	(void)argtype;
+	(void)args;
+
 	cpu->a = alu_load(cpu->x, 0, &cpu->flags);
 
 	DEBUG("Executing TXA");
@@ -940,6 +1031,9 @@ static void exec_txa(struct simak65_cpustate *cpu, enum argtype argtype, u8 *arg
 
 static void exec_txs(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
+	(void)argtype;
+	(void)args;
+
 	cpu->sp = cpu->x;
 
 	DEBUG("Executing TXS");
@@ -949,6 +1043,9 @@ static void exec_txs(struct simak65_cpustate *cpu, enum argtype argtype, u8 *arg
 
 static void exec_tya(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
+	(void)argtype;
+	(void)args;
+
 	cpu->a = alu_load(cpu->y, 0, &cpu->flags);
 
 	DEBUG("Executing TYA");

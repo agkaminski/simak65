@@ -99,6 +99,8 @@ u8 alu_sub(u8 a, u8 b, u8 *flags)
 
 u8 alu_inc(u8 a, u8 b, u8 *flags)
 {
+	(void)b;
+
 	u8 result;
 
 	result = a + 1;
@@ -112,6 +114,8 @@ u8 alu_inc(u8 a, u8 b, u8 *flags)
 
 u8 alu_dec(u8 a, u8 b, u8 *flags)
 {
+	(void)b;
+
 	u8 result;
 
 	result = a - 1;
@@ -164,6 +168,8 @@ u8 alu_eor(u8 a, u8 b, u8 *flags)
 
 u8 alu_rol(u8 a, u8 b, u8 *flags)
 {
+	(void)b;
+
 	u8 result;
 
 	result = a << 1;
@@ -185,6 +191,8 @@ u8 alu_rol(u8 a, u8 b, u8 *flags)
 
 u8 alu_ror(u8 a, u8 b, u8 *flags)
 {
+	(void)b;
+
 	u8 result;
 
 	result = a >> 1;
@@ -206,6 +214,8 @@ u8 alu_ror(u8 a, u8 b, u8 *flags)
 
 u8 alu_asl(u8 a, u8 b, u8 *flags)
 {
+	(void)b;
+
 	u8 result;
 
 	result = a << 1;
@@ -224,6 +234,8 @@ u8 alu_asl(u8 a, u8 b, u8 *flags)
 
 u8 alu_lsr(u8 a, u8 b, u8 *flags)
 {
+	(void)b;
+
 	u8 result;
 
 	result = a >> 1;
@@ -287,6 +299,8 @@ u8 alu_cmp(u8 a, u8 b, u8 *flags)
 
 u8 alu_load(u8 a, u8 b, u8 *flags)
 {
+	(void)b;
+
 	alu_flags(a, flags, FLAG_ZERO | FLAG_SIGN);
 
 	DEBUG("0x%02x, flags 0x%02x", a & 0xff, *flags);
