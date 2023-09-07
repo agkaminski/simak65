@@ -1,16 +1,16 @@
-#ifndef _EXEC_H_
-#define _EXEC_H_
+#ifndef SIMAK65_EXEC_H_
+#define SIMAK65_EXEC_H_
 
-#include "common/types.h"
+#include "types.h"
 #include "decoder.h"
 #include "addrmode.h"
 
-void exec_execute(cpustate_t *cpu, opcode_t instruction, argtype_t argtype, u8 *args, cycles_t *cycles);
+void exec_execute(struct simak65_cpustate *cpu, enum opcode instruction, enum argtype argtype, u8 *args, unsigned int *cycles);
 
-void exec_irq(cpustate_t *cpu, cycles_t *cycles);
+void exec_irq(struct simak65_cpustate *cpu, unsigned int *cycles);
 
-void exec_nmi(cpustate_t *cpu, cycles_t *cycles);
+void exec_nmi(struct simak65_cpustate *cpu, unsigned int *cycles);
 
-void exec_rst(cpustate_t *cpu, cycles_t *cycles);
+void exec_rst(struct simak65_cpustate *cpu, unsigned int *cycles);
 
-#endif
+#endif /* SIMAK65_EXEC_H_ */

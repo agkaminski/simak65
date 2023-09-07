@@ -1,13 +1,13 @@
-#ifndef _ADDRMODE_H_
-#define _ADDRMODE_H_
+#ifndef SIMAK65_ADDRMODE_H_
+#define SIMAK65_ADDRMODE_H_
 
-#include "common/types.h"
+#include "types.h"
 #include "decoder.h"
 
-typedef enum { arg_none, arg_byte, arg_addr } argtype_t;
+enum argtype { arg_none, arg_byte, arg_addr };
 
-u8 addrmode_nextpc(cpustate_t *cpu);
+u8 addrmode_nextpc(struct simak65_cpustate *cpu);
 
-argtype_t addrmode_getArgs(cpustate_t *cpu, u8 *args, addrmode_t mode, cycles_t *cycles);
+enum argtype addrmode_getArgs(struct simak65_cpustate *cpu, u8 *args, enum addrmode mode, unsigned int *cycles);
 
-#endif
+#endif /* SIMAK65_ADDRMODE_H_ */

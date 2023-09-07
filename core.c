@@ -1,5 +1,5 @@
 #include <stdlib.h>
-#include "common/error.h"
+#include "error.h"
 #include "common/threads.h"
 #include "bus/bus.h"
 #include "core.h"
@@ -11,8 +11,8 @@
 typedef enum { CORE_IDLE, CORE_RUN, CORE_STEP, CORE_RST, CORE_IRQ, CORE_NMI } corestate_t;
 
 struct {
-	cpustate_t cpu;
-	cycles_t cycles;
+	struct simak65_cpustate cpu;
+	unsigned int cycles;
 	thread_t thread;
 	corestate_t state;
 	mutex_t lock;
@@ -24,20 +24,20 @@ struct {
 
 static void step(void)
 {
-	opinfo_t instruction;
-	argtype_t argtype;
+	struct opinfo instruction;
+	enum argtype enum argtype;
 	u8 args[2];
 
 	instruction = decode(addrmode_nextpc(&core_global.cpu));
-	argtype = addrmode_getArgs(&core_global.cpu, args, instruction.mode, &core_global.cycles);
-	exec_execute(&core_global.cpu, instruction.opcode, argtype, args, &core_global.cycles);
+	enum argtype = addrmode_getArgs(&core_global.cpu, args, instruction.mode, &core_global.cycles);
+	exec_execute(&core_global.cpu, instruction.opcode, enum argtype, args, &core_global.cycles);
 
 	core_global.cycles += 1;
 }
 
 static void *core_thread(void *arg)
 {
-	cycles_t lastCycles, newCycles;
+	unsigned int lastCycles, newCycles;
 	unsigned int speed;
 
 	while (1) {
@@ -145,7 +145,7 @@ void core_stop(void)
 	unlock(&core_global.lock);
 }
 
-void core_getState(cpustate_t *cpu, cycles_t *cycles)
+void core_getState(struct simak65_cpustate *cpu, unsigned int *cycles)
 {
 	lock(&core_global.lock);
 	if (cpu != NULL)
@@ -155,7 +155,7 @@ void core_getState(cpustate_t *cpu, cycles_t *cycles)
 	unlock(&core_global.lock);
 }
 
-void core_setState(cpustate_t *cpu)
+void core_setState(struct simak65_cpustate *cpu)
 {
 	lock(&core_global.lock);
 	core_global.cpu = *cpu;

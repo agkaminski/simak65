@@ -1,9 +1,11 @@
-#include "common/error.h"
-#include "bus/bus.h"
+#include "error.h"
+#include "bus.h"
 #include "addrmode.h"
 #include "decoder.h"
+#include "simak65.h"
 
-static argtype_t modeAcc(cpustate_t *cpu, u8 *args, cycles_t *cycles)
+
+static enum argtype modeAcc(struct simak65_cpustate *cpu, u8 *args, unsigned int *cycles)
 {
 	args[0] = cpu->a;
 
@@ -12,7 +14,7 @@ static argtype_t modeAcc(cpustate_t *cpu, u8 *args, cycles_t *cycles)
 	return arg_byte;
 }
 
-static argtype_t modeAbsolute(cpustate_t *cpu, u8 *args, cycles_t *cycles)
+static enum argtype modeAbsolute(struct simak65_cpustate *cpu, u8 *args, unsigned int *cycles)
 {
 	args[0] = addrmode_nextpc(cpu);
 	args[1] = addrmode_nextpc(cpu);
@@ -24,7 +26,7 @@ static argtype_t modeAbsolute(cpustate_t *cpu, u8 *args, cycles_t *cycles)
 	return arg_addr;
 }
 
-static argtype_t modeAbsoluteX(cpustate_t *cpu, u8 *args, cycles_t *cycles)
+static enum argtype modeAbsoluteX(struct simak65_cpustate *cpu, u8 *args, unsigned int *cycles)
 {
 	u16 addr;
 
@@ -42,7 +44,7 @@ static argtype_t modeAbsoluteX(cpustate_t *cpu, u8 *args, cycles_t *cycles)
 	return arg_addr;
 }
 
-static argtype_t modeAbsoluteY(cpustate_t *cpu, u8 *args, cycles_t *cycles)
+static enum argtype modeAbsoluteY(struct simak65_cpustate *cpu, u8 *args, unsigned int *cycles)
 {
 	u16 addr;
 
@@ -60,10 +62,10 @@ static argtype_t modeAbsoluteY(cpustate_t *cpu, u8 *args, cycles_t *cycles)
 	return arg_addr;
 }
 
-static argtype_t modeImmediate(cpustate_t *cpu, u8 *args, cycles_t *cycles)
+static enum argtype modeImmediate(struct simak65_cpustate *cpu, u8 *args, unsigned int *cycles)
 {
 	args[0] = addrmode_nextpc(cpu);
-	
+
 	DEBUG("Immediate mode, args: 0x%02x", args[0]);
 
 	*cycles += 1;
@@ -71,22 +73,22 @@ static argtype_t modeImmediate(cpustate_t *cpu, u8 *args, cycles_t *cycles)
 	return arg_byte;
 }
 
-static argtype_t modeImplicant(cpustate_t *cpu, u8 *args, cycles_t *cycles)
+static enum argtype modeImplicant(struct simak65_cpustate *cpu, u8 *args, unsigned int *cycles)
 {
 	DEBUG("Implicant mode, no args");
 
 	return arg_none;
 }
 
-static argtype_t modeIndirect(cpustate_t *cpu, u8 *args, cycles_t *cycles)
+static enum argtype modeIndirect(struct simak65_cpustate *cpu, u8 *args, unsigned int *cycles)
 {
 	u16 addr;
 
 	addr = addrmode_nextpc(cpu);
 	addr |= (u16)addrmode_nextpc(cpu) << 8;
 
-	args[0] = bus_read(addr++);
-	args[1] = bus_read(addr);
+	args[0] = bus.read(addr++);
+	args[1] = bus.read(addr);
 
 	DEBUG("Indirect mode, args: 0x%02x%02x from addr: 0x%04x", args[1], args[0], addr);
 
@@ -95,7 +97,7 @@ static argtype_t modeIndirect(cpustate_t *cpu, u8 *args, cycles_t *cycles)
 	return arg_addr;
 }
 
-static argtype_t modeIndirectX(cpustate_t *cpu, u8 *args, cycles_t *cycles)
+static enum argtype modeIndirectX(struct simak65_cpustate *cpu, u8 *args, unsigned int *cycles)
 {
 	u16 addr;
 
@@ -103,8 +105,8 @@ static argtype_t modeIndirectX(cpustate_t *cpu, u8 *args, cycles_t *cycles)
 	addr += cpu->x;
 	addr &= 0xff;
 
-	args[0] = bus_read(addr++);
-	args[1] = bus_read(addr);
+	args[0] = bus.read(addr++);
+	args[1] = bus.read(addr);
 
 	DEBUG("Indexed indirect mode, args: 0x%02x%02x from addr: 0x%04x", args[1], args[0], addr);
 
@@ -113,15 +115,15 @@ static argtype_t modeIndirectX(cpustate_t *cpu, u8 *args, cycles_t *cycles)
 	return arg_addr;
 }
 
-static argtype_t modeIndirectY(cpustate_t *cpu, u8 *args, cycles_t *cycles)
+static enum argtype modeIndirectY(struct simak65_cpustate *cpu, u8 *args, unsigned int *cycles)
 {
 	u16 zpAddr;
 	u16 addr;
 
 	zpAddr = addrmode_nextpc(cpu);
 
-	addr = bus_read(zpAddr++);
-	addr |= (u16)bus_read(zpAddr) << 8;
+	addr = bus.read(zpAddr++);
+	addr |= (u16)bus.read(zpAddr) << 8;
 
 	addr += cpu->y;
 
@@ -135,7 +137,7 @@ static argtype_t modeIndirectY(cpustate_t *cpu, u8 *args, cycles_t *cycles)
 	return arg_addr;
 }
 
-static argtype_t modeRelative(cpustate_t *cpu, u8 *args, cycles_t *cycles)
+static enum argtype modeRelative(struct simak65_cpustate *cpu, u8 *args, unsigned int *cycles)
 {
 	s8 rel;
 	u16 addr;
@@ -154,7 +156,7 @@ static argtype_t modeRelative(cpustate_t *cpu, u8 *args, cycles_t *cycles)
 	return arg_addr;
 }
 
-static argtype_t modeZeropage(cpustate_t *cpu, u8 *args, cycles_t *cycles)
+static enum argtype modeZeropage(struct simak65_cpustate *cpu, u8 *args, unsigned int *cycles)
 {
 	args[0] = addrmode_nextpc(cpu);
 	args[1] = 0;
@@ -166,7 +168,7 @@ static argtype_t modeZeropage(cpustate_t *cpu, u8 *args, cycles_t *cycles)
 	return arg_addr;
 }
 
-static argtype_t modeZeropageX(cpustate_t *cpu, u8 *args, cycles_t *cycles)
+static enum argtype modeZeropageX(struct simak65_cpustate *cpu, u8 *args, unsigned int *cycles)
 {
 	args[0] = addrmode_nextpc(cpu) + cpu->x;
 	args[1] = 0;
@@ -178,7 +180,7 @@ static argtype_t modeZeropageX(cpustate_t *cpu, u8 *args, cycles_t *cycles)
 	return arg_addr;
 }
 
-static argtype_t modeZeropageY(cpustate_t *cpu, u8 *args, cycles_t *cycles)
+static enum argtype modeZeropageY(struct simak65_cpustate *cpu, u8 *args, unsigned int *cycles)
 {
 	args[0] = addrmode_nextpc(cpu) + cpu->y;
 	args[1] = 0;
@@ -190,11 +192,11 @@ static argtype_t modeZeropageY(cpustate_t *cpu, u8 *args, cycles_t *cycles)
 	return arg_addr;
 }
 
-u8 addrmode_nextpc(cpustate_t *cpu)
+u8 addrmode_nextpc(struct simak65_cpustate *cpu)
 {
 	u8 data;
 
-	data = bus_read(cpu->pc);
+	data = bus.read(cpu->pc);
 
 	DEBUG("Read 0x%02x from pc: 0x%04x", data, cpu->pc);
 
@@ -206,9 +208,9 @@ u8 addrmode_nextpc(cpustate_t *cpu)
 	return data;
 }
 
-argtype_t addrmode_getArgs(cpustate_t *cpu, u8 *args, addrmode_t mode, cycles_t *cycles)
+enum argtype addrmode_getArgs(struct simak65_cpustate *cpu, u8 *args, enum addrmode mode, unsigned int *cycles)
 {
-	argtype_t arg_type;
+	enum argtype arg_type;
 
 	switch(mode) {
 		case mode_acc:

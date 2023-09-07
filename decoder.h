@@ -1,9 +1,9 @@
-#ifndef _DECODER_H_
-#define _DECODER_H_
+#ifndef SIMAK65_DECODER_H_
+#define SIMAK65_DECODER_H_
 
-#include "common/types.h"
+#include "types.h"
 
-typedef enum {
+typedef enum opcode {
 	ADC, AND, ASL, BCC, BCS, BEQ, BIT, BMI,
 	BNE, BPL, BRK, BVC, BVS, CLC, CLD, CLI,
 	CLV, CMP, CPX, CPY, DEC, DEX, DEY, EOR,
@@ -11,22 +11,22 @@ typedef enum {
 	LSR, NOP, ORA, PHA, PHP, PLA, PLP, ROL,
 	ROR, RTI, RTS, SBC, SEC, SED, SEI, STA,
 	STX, STY, TAX, TAY, TSX, TXA, TXS, TYA
-} opcode_t;
+};
 
-typedef enum {
+typedef enum addrmode{
 	mode_acc, mode_abs, mode_abx, mode_aby,
 	mode_imm, mode_imp, mode_ind, mode_inx,
 	mode_iny, mode_rel, mode_zp, mode_zpx,
 	mode_zpy
-} addrmode_t;
+};
 
-typedef struct {
-	opcode_t opcode;
-	addrmode_t mode;
-} opinfo_t;
+typedef struct opinfo {
+	enum opcode opcode;
+	enum addrmode mode;
+};
 
-opinfo_t decode(u8 opcode);
+struct opinfo decode(u8 opcode);
 
-const char *opcodetostring(opcode_t opcode);
+const char *opcodetostring(enum opcode opcode);
 
-#endif
+#endif /* SIMAK65_DECODER_H_ */

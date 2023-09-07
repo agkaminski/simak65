@@ -1,7 +1,7 @@
-#ifndef _CORE_H_
-#define _CORE_H_
+#ifndef SIMAK65_CORE_H_
+#define SIMAK65_CORE_H_
 
-#include "common/types.h"
+#include "types.h"
 
 void core_nmi(void);
 
@@ -15,12 +15,12 @@ void core_run(void);
 
 void core_stop(void);
 
-void core_getState(cpustate_t *cpu, cycles_t *cycles);
+void core_getState(struct simak65_cpustate *cpu, unsigned int *cycles);
 
-void core_setState(cpustate_t *cpu);
+void core_setState(struct simak65_cpustate *cpu);
 
 void core_setSpeed(unsigned int speed);
 
 void core_init(void);
 
-#endif
+#endif /* SIMAK65_CORE_H_ */

@@ -1,16 +1,15 @@
-#include "common/error.h"
-#include "bus/bus.h"
+#include "error.h"
+#include "bus.h"
 #include "exec.h"
 #include "alu.h"
 #include "flags.h"
+#include "simak65.h"
 
 #define IRQ_VECTOR 0xfffe
 #define RST_VECTOR 0xfffc
 #define NMI_VECTOR 0xfffa
 
-typedef void (*exec_func_t)(cpustate_t*, argtype_t, u8*, cycles_t*);
-
-static void exec_push(cpustate_t *cpu, u8 data)
+static void exec_push(struct simak65_cpustate *cpu, u8 data)
 {
 	u16 addr;
 
@@ -21,11 +20,11 @@ static void exec_push(cpustate_t *cpu, u8 data)
 		WARN("Stack pointer wrap-around");
 
 	DEBUG("Pushing 0x%02x to stack: 0x%04x", data, addr);
-	
-	bus_write(addr, data);
+
+	bus.write(addr, data);
 }
 
-static u8 exec_pop(cpustate_t *cpu)
+static u8 exec_pop(struct simak65_cpustate *cpu)
 {
 	u16 addr;
 	u8 data;
@@ -36,21 +35,21 @@ static u8 exec_pop(cpustate_t *cpu)
 	if (cpu->sp == 0)
 		WARN("Stack pointer wrap-around");
 
-	data = bus_read(addr);
+	data = bus.read(addr);
 
 	DEBUG("Popped 0x%02x from stack: 0x%04x", data, addr);
 
 	return data;
 }
 
-static void exec_adc(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_adc(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	u16 addr;
 	u8 arg;
 
 	if (argtype == arg_addr) {
-		addr = ((u16)args[1] << 8) | args[0]; 
-		arg = bus_read(addr);
+		addr = ((u16)args[1] << 8) | args[0];
+		arg = bus.read(addr);
 		*cycles += 2;
 	}
 	else {
@@ -63,14 +62,14 @@ static void exec_adc(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	DEBUG("Adding 0x%02x to Acc, result 0x%02x", arg, cpu->a);
 }
 
-static void exec_and(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_and(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	u16 addr;
 	u8 arg;
 
 	if (argtype == arg_addr) {
-		addr = ((u16)args[1] << 8) | args[0]; 
-		arg = bus_read(addr);
+		addr = ((u16)args[1] << 8) | args[0];
+		arg = bus.read(addr);
 		*cycles += 2;
 	}
 	else {
@@ -83,15 +82,15 @@ static void exec_and(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	DEBUG("Performing AND 0x%02x, Acc, result 0x%02x", arg, cpu->a);
 }
 
-static void exec_asl(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_asl(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	u16 addr;
 	u8 arg;
 	u8 result;
 
 	if (argtype == arg_addr) {
-		addr = ((u16)args[1] << 8) | args[0]; 
-		arg = bus_read(addr);
+		addr = ((u16)args[1] << 8) | args[0];
+		arg = bus.read(addr);
 		*cycles += 2;
 	}
 	else {
@@ -104,7 +103,7 @@ static void exec_asl(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	DEBUG("Performing ASL of 0x%02x, result 0x%02x", arg, result);
 
 	if (argtype == arg_addr) {
-		bus_write(addr, result);
+		bus.write(addr, result);
 		*cycles += 1;
 	}
 	else {
@@ -112,13 +111,13 @@ static void exec_asl(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	}
 }
 
-static void exec_bcc(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_bcc(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	u16 addr;
 
 	addr = (args[1] << 8) | args[0];
 
-	if (!(cpu->flags & flag_carry)) {
+	if (!(cpu->flags & FLAG_CARRY)) {
 		DEBUG("BCC branch taken, new pc 0x%04x", addr);
 #ifndef NDEBUG
 		if (addr == cpu->pc - 2)
@@ -132,13 +131,13 @@ static void exec_bcc(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	}
 }
 
-static void exec_bcs(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_bcs(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	u16 addr;
 
 	addr = (args[1] << 8) | args[0];
 
-	if (cpu->flags & flag_carry) {
+	if (cpu->flags & FLAG_CARRY) {
 		DEBUG("BCS branch taken, new pc 0x%04x", addr);
 #ifndef NDEBUG
 		if (addr == cpu->pc - 2)
@@ -152,13 +151,13 @@ static void exec_bcs(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	}
 }
 
-static void exec_beq(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_beq(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	u16 addr;
 
 	addr = (args[1] << 8) | args[0];
 
-	if (cpu->flags & flag_zero) {
+	if (cpu->flags & FLAG_ZERO) {
 		DEBUG("BEQ branch taken, new pc 0x%04x", addr);
 #ifndef NDEBUG
 		if (addr == cpu->pc - 2)
@@ -172,14 +171,14 @@ static void exec_beq(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	}
 }
 
-static void exec_bit(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_bit(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	u16 addr;
 	u8 arg;
 
 	if (argtype == arg_addr) {
-		addr = ((u16)args[1] << 8) | args[0]; 
-		arg = bus_read(addr);
+		addr = ((u16)args[1] << 8) | args[0];
+		arg = bus.read(addr);
 		*cycles += 2;
 	}
 	else {
@@ -192,13 +191,13 @@ static void exec_bit(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	DEBUG("Performing BIT A: 0x%02x and 0x%02x", cpu->a, arg);
 }
 
-static void exec_bmi(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_bmi(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	u16 addr;
 
 	addr = (args[1] << 8) | args[0];
 
-	if (cpu->flags & flag_sign) {
+	if (cpu->flags & FLAG_SIGN) {
 		DEBUG("BMI branch taken, new pc 0x%04x", addr);
 #ifndef NDEBUG
 		if (addr == cpu->pc - 2)
@@ -212,13 +211,13 @@ static void exec_bmi(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	}
 }
 
-static void exec_bne(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_bne(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	u16 addr;
 
 	addr = (args[1] << 8) | args[0];
 
-	if (!(cpu->flags & flag_zero)) {
+	if (!(cpu->flags & FLAG_ZERO)) {
 		DEBUG("BNE branch taken, new pc 0x%04x", addr);
 #ifndef NDEBUG
 		if (addr == cpu->pc - 2)
@@ -232,13 +231,13 @@ static void exec_bne(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	}
 }
 
-static void exec_bpl(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_bpl(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	u16 addr;
 
 	addr = (args[1] << 8) | args[0];
 
-	if (!(cpu->flags & flag_sign)) {
+	if (!(cpu->flags & FLAG_SIGN)) {
 		DEBUG("BPL branch taken, new pc 0x%04x", addr);
 #ifndef NDEBUG
 		if (addr == cpu->pc - 2)
@@ -252,7 +251,7 @@ static void exec_bpl(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	}
 }
 
-static void exec_brk(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_brk(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	u8 flags;
 	u16 addr;
@@ -262,13 +261,13 @@ static void exec_brk(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	exec_push(cpu, cpu->pc & 0xff);
 
 	flags = cpu->flags;
-	flags |= flag_one | flag_brk;
+	flags |= FLAG_ONE | FLAG_BRK;
 	exec_push(cpu, flags);
 
-	cpu->flags |= flag_irqd;
+	cpu->flags |= FLAG_IRQD;
 
-	addr = bus_read(IRQ_VECTOR);
-	addr |= ((u16)bus_read(IRQ_VECTOR + 1) << 8);
+	addr = bus.read(IRQ_VECTOR);
+	addr |= ((u16)bus.read(IRQ_VECTOR + 1) << 8);
 
 	DEBUG("Performing BRK, old pc: 0x%04x, new pc: 0x%04x", cpu->pc, addr);
 
@@ -277,13 +276,13 @@ static void exec_brk(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	*cycles += 4;
 }
 
-static void exec_bvc(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_bvc(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	u16 addr;
 
 	addr = (args[1] << 8) | args[0];
 
-	if (!(cpu->flags & flag_ovrf)) {
+	if (!(cpu->flags & FLAG_OVRF)) {
 		DEBUG("BVC branch taken, new pc 0x%04x", addr);
 #ifndef NDEBUG
 		if (addr == cpu->pc - 2)
@@ -297,13 +296,13 @@ static void exec_bvc(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	}
 }
 
-static void exec_bvs(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_bvs(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	u16 addr;
 
 	addr = (args[1] << 8) | args[0];
 
-	if (cpu->flags & flag_ovrf) {
+	if (cpu->flags & FLAG_OVRF) {
 		DEBUG("BVS branch taken, new pc 0x%04x", addr);
 #ifndef NDEBUG
 		if (addr == cpu->pc - 2)
@@ -317,50 +316,50 @@ static void exec_bvs(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	}
 }
 
-static void exec_clc(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_clc(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
-	cpu->flags &= ~flag_carry;
+	cpu->flags &= ~FLAG_CARRY;
 
 	DEBUG("Performing CLC");
 
 	*cycles += 1;
 }
 
-static void exec_cld(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_cld(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
-	cpu->flags &= ~flag_bcd;
+	cpu->flags &= ~FLAG_BCD;
 
 	DEBUG("Performing CLD");
 
 	*cycles += 1;
 }
 
-static void exec_cli(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_cli(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
-	cpu->flags &= ~flag_irqd;
+	cpu->flags &= ~FLAG_IRQD;
 
 	DEBUG("Performing CLI");
 
 	*cycles += 1;
 }
 
-static void exec_clv(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_clv(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
-	cpu->flags &= ~flag_ovrf;
+	cpu->flags &= ~FLAG_OVRF;
 
 	DEBUG("Performing CLV");
 
 	*cycles += 1;
 }
 
-static void exec_cmp(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_cmp(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	u16 addr;
 	u8 arg;
 
 	if (argtype == arg_addr) {
-		addr = ((u16)args[1] << 8) | args[0]; 
-		arg = bus_read(addr);
+		addr = ((u16)args[1] << 8) | args[0];
+		arg = bus.read(addr);
 		*cycles += 2;
 	}
 	else {
@@ -373,14 +372,14 @@ static void exec_cmp(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	DEBUG("Performing CMP A: 0x%02x and 0x%02x", cpu->a, arg);
 }
 
-static void exec_cpx(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_cpx(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	u16 addr;
 	u8 arg;
 
 	if (argtype == arg_addr) {
-		addr = ((u16)args[1] << 8) | args[0]; 
-		arg = bus_read(addr);
+		addr = ((u16)args[1] << 8) | args[0];
+		arg = bus.read(addr);
 		*cycles += 2;
 	}
 	else {
@@ -393,14 +392,14 @@ static void exec_cpx(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	DEBUG("Performing CPX X: 0x%02x and 0x%02x", cpu->x, arg);
 }
 
-static void exec_cpy(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_cpy(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	u16 addr;
 	u8 arg;
 
 	if (argtype == arg_addr) {
-		addr = ((u16)args[1] << 8) | args[0]; 
-		arg = bus_read(addr);
+		addr = ((u16)args[1] << 8) | args[0];
+		arg = bus.read(addr);
 		*cycles += 2;
 	}
 	else {
@@ -413,15 +412,15 @@ static void exec_cpy(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	DEBUG("Performing CPY Y: 0x%02x and 0x%02x", cpu->y, arg);
 }
 
-static void exec_dec(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_dec(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	u16 addr;
 	u8 arg;
 	u8 result;
 
 	if (argtype == arg_addr) {
-		addr = ((u16)args[1] << 8) | args[0]; 
-		arg = bus_read(addr);
+		addr = ((u16)args[1] << 8) | args[0];
+		arg = bus.read(addr);
 		*cycles += 2;
 	}
 	else {
@@ -434,7 +433,7 @@ static void exec_dec(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	DEBUG("Performing DEC of 0x%02x, result 0x%02x", arg, result);
 
 	if (argtype == arg_addr) {
-		bus_write(addr, result);
+		bus.write(addr, result);
 		*cycles += 1;
 	}
 	else {
@@ -442,7 +441,7 @@ static void exec_dec(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	}
 }
 
-static void exec_dex(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_dex(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	cpu->x = alu_dec(cpu->x, 0, &cpu->flags);
 
@@ -451,7 +450,7 @@ static void exec_dex(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	*cycles += 1;
 }
 
-static void exec_dey(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_dey(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	cpu->y = alu_dec(cpu->y, 0, &cpu->flags);
 
@@ -460,14 +459,14 @@ static void exec_dey(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	*cycles += 1;
 }
 
-static void exec_eor(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_eor(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	u16 addr;
 	u8 arg;
 
 	if (argtype == arg_addr) {
-		addr = ((u16)args[1] << 8) | args[0]; 
-		arg = bus_read(addr);
+		addr = ((u16)args[1] << 8) | args[0];
+		arg = bus.read(addr);
 		*cycles += 2;
 	}
 	else {
@@ -480,15 +479,15 @@ static void exec_eor(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	DEBUG("Performing EOR 0x%02x, Acc, result 0x%02x", arg, cpu->a);
 }
 
-static void exec_inc(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_inc(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	u16 addr;
 	u8 arg;
 	u8 result;
 
 	if (argtype == arg_addr) {
-		addr = ((u16)args[1] << 8) | args[0]; 
-		arg = bus_read(addr);
+		addr = ((u16)args[1] << 8) | args[0];
+		arg = bus.read(addr);
 		*cycles += 2;
 	}
 	else {
@@ -501,7 +500,7 @@ static void exec_inc(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	DEBUG("Performing INC of 0x%02x, result 0x%02x", arg, result);
 
 	if (argtype == arg_addr) {
-		bus_write(addr, result);
+		bus.write(addr, result);
 		*cycles += 1;
 	}
 	else {
@@ -509,7 +508,7 @@ static void exec_inc(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	}
 }
 
-static void exec_inx(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_inx(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	cpu->x = alu_inc(cpu->x, 0, &cpu->flags);
 
@@ -518,7 +517,7 @@ static void exec_inx(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	*cycles += 1;
 }
 
-static void exec_iny(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_iny(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	cpu->y = alu_inc(cpu->y, 0, &cpu->flags);
 
@@ -527,7 +526,7 @@ static void exec_iny(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	*cycles += 1;
 }
 
-static void exec_jmp(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_jmp(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	u16 addr;
 
@@ -540,7 +539,7 @@ static void exec_jmp(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	*cycles += 1;
 }
 
-static void exec_jsr(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_jsr(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	u16 addr;
 
@@ -558,14 +557,14 @@ static void exec_jsr(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	*cycles += 2;
 }
 
-static void exec_lda(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_lda(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	u16 addr;
 	u8 arg;
 
-	if (argtype == arg_addr) {
-		addr = ((u16)args[1] << 8) | args[0]; 
-		arg = bus_read(addr);
+	if (enum argtype == arg_addr) {
+		addr = ((u16)args[1] << 8) | args[0];
+		arg = bus.read(addr);
 		*cycles += 2;
 	}
 	else {
@@ -578,14 +577,14 @@ static void exec_lda(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	cpu->a = alu_load(arg, 0, &cpu->flags);
 }
 
-static void exec_ldx(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_ldx(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	u16 addr;
 	u8 arg;
 
 	if (argtype == arg_addr) {
-		addr = ((u16)args[1] << 8) | args[0]; 
-		arg = bus_read(addr);
+		addr = ((u16)args[1] << 8) | args[0];
+		arg = bus.read(addr);
 		*cycles += 2;
 	}
 	else {
@@ -598,14 +597,14 @@ static void exec_ldx(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	cpu->x = alu_load(arg, 0, &cpu->flags);
 }
 
-static void exec_ldy(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_ldy(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	u16 addr;
 	u8 arg;
 
 	if (argtype == arg_addr) {
-		addr = ((u16)args[1] << 8) | args[0]; 
-		arg = bus_read(addr);
+		addr = ((u16)args[1] << 8) | args[0];
+		arg = bus.read(addr);
 		*cycles += 2;
 	}
 	else {
@@ -618,15 +617,15 @@ static void exec_ldy(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	cpu->y = alu_load(arg, 0, &cpu->flags);
 }
 
-static void exec_lsr(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_lsr(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	u16 addr;
 	u8 arg;
 	u8 result;
 
 	if (argtype == arg_addr) {
-		addr = ((u16)args[1] << 8) | args[0]; 
-		arg = bus_read(addr);
+		addr = ((u16)args[1] << 8) | args[0];
+		arg = bus.read(addr);
 		*cycles += 2;
 	}
 	else {
@@ -639,7 +638,7 @@ static void exec_lsr(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	DEBUG("Performing LSR of 0x%02x, result 0x%02x", arg, result);
 
 	if (argtype == arg_addr) {
-		bus_write(addr, result);
+		bus.write(addr, result);
 		*cycles += 1;
 	}
 	else {
@@ -647,19 +646,19 @@ static void exec_lsr(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	}
 }
 
-static void exec_nop(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_nop(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	*cycles += 1;
 }
 
-static void exec_ora(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_ora(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	u16 addr;
 	u8 arg;
 
 	if (argtype == arg_addr) {
-		addr = ((u16)args[1] << 8) | args[0]; 
-		arg = bus_read(addr);
+		addr = ((u16)args[1] << 8) | args[0];
+		arg = bus.read(addr);
 		*cycles += 2;
 	}
 	else {
@@ -672,7 +671,7 @@ static void exec_ora(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	DEBUG("Performing ORA 0x%02x, Acc, result 0x%02x", arg, cpu->a);
 }
 
-static void exec_pha(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_pha(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	exec_push(cpu, cpu->a);
 
@@ -681,12 +680,12 @@ static void exec_pha(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	*cycles += 2;
 }
 
-static void exec_php(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_php(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	u8 flags;
 
 	flags = cpu->flags;
-	flags |= flag_one | flag_brk;
+	flags |= FLAG_ONE | FLAG_BRK;
 
 	exec_push(cpu, flags);
 
@@ -695,7 +694,7 @@ static void exec_php(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	*cycles += 2;
 }
 
-static void exec_pla(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_pla(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	cpu->a = alu_load(exec_pop(cpu), 0, &cpu->flags);
 
@@ -704,25 +703,25 @@ static void exec_pla(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	*cycles += 2;
 }
 
-static void exec_plp(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_plp(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	cpu->flags = exec_pop(cpu);
-	cpu->flags &= flag_carry | flag_zero | flag_irqd | flag_bcd | flag_ovrf | flag_sign;
+	cpu->flags &= FLAG_CARRY | FLAG_ZERO | FLAG_IRQD | FLAG_BCD | FLAG_OVRF | FLAG_SIGN;
 
 	DEBUG("Performing PLP");
 
 	*cycles += 2;
 }
 
-static void exec_rol(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_rol(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	u16 addr;
 	u8 arg;
 	u8 result;
 
 	if (argtype == arg_addr) {
-		addr = ((u16)args[1] << 8) | args[0]; 
-		arg = bus_read(addr);
+		addr = ((u16)args[1] << 8) | args[0];
+		arg = bus.read(addr);
 		*cycles += 2;
 	}
 	else {
@@ -735,7 +734,7 @@ static void exec_rol(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	DEBUG("Performing ROL of 0x%02x, result 0x%02x", arg, result);
 
 	if (argtype == arg_addr) {
-		bus_write(addr, result);
+		bus.write(addr, result);
 		*cycles += 1;
 	}
 	else {
@@ -743,15 +742,15 @@ static void exec_rol(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	}
 }
 
-static void exec_ror(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_ror(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	u16 addr;
 	u8 arg;
 	u8 result;
 
 	if (argtype == arg_addr) {
-		addr = ((u16)args[1] << 8) | args[0]; 
-		arg = bus_read(addr);
+		addr = ((u16)args[1] << 8) | args[0];
+		arg = bus.read(addr);
 		*cycles += 2;
 	}
 	else {
@@ -764,7 +763,7 @@ static void exec_ror(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	DEBUG("Performing ROR of 0x%02x, result 0x%02x", arg, result);
 
 	if (argtype == arg_addr) {
-		bus_write(addr, result);
+		bus.write(addr, result);
 		*cycles += 1;
 	}
 	else {
@@ -772,12 +771,12 @@ static void exec_ror(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	}
 }
 
-static void exec_rti(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_rti(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	u16 addr;
 
 	cpu->flags = exec_pop(cpu);
-	cpu->flags &= flag_carry | flag_zero | flag_irqd | flag_bcd | flag_ovrf | flag_sign;
+	cpu->flags &= FLAG_CARRY | FLAG_ZERO | FLAG_IRQD | FLAG_BCD | FLAG_OVRF | FLAG_SIGN;
 
 	addr = exec_pop(cpu);
 	addr |= (u16)exec_pop(cpu) << 8;
@@ -789,7 +788,7 @@ static void exec_rti(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	cycles += 3;
 }
 
-static void exec_rts(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_rts(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	u16 addr;
 
@@ -804,14 +803,14 @@ static void exec_rts(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	cycles += 2;
 }
 
-static void exec_sbc(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_sbc(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	u16 addr;
 	u8 arg;
 
 	if (argtype == arg_addr) {
-		addr = ((u16)args[1] << 8) | args[0]; 
-		arg = bus_read(addr);
+		addr = ((u16)args[1] << 8) | args[0];
+		arg = bus.read(addr);
 		*cycles += 2;
 	}
 	else {
@@ -824,34 +823,34 @@ static void exec_sbc(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	DEBUG("Subtracting 0x%02x from Acc, result 0x%02x", arg, cpu->a);
 }
 
-static void exec_sec(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_sec(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
-	cpu->flags |= flag_carry;
+	cpu->flags |= FLAG_CARRY;
 
 	DEBUG("Executing SEC");
 
 	*cycles += 1;
 }
 
-static void exec_sed(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_sed(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
-	cpu->flags |= flag_bcd;
+	cpu->flags |= FLAG_BCD;
 
 	DEBUG("Executing SED");
 
 	*cycles += 1;
 }
 
-static void exec_sei(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_sei(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
-	cpu->flags |= flag_irqd;
+	cpu->flags |= FLAG_IRQD;
 
 	DEBUG("Executing SEI");
 
 	*cycles += 1;
 }
 
-static void exec_sta(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_sta(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	u16 addr;
 
@@ -860,14 +859,14 @@ static void exec_sta(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 
 	addr = ((u16)args[1] << 8) | args[0];
 
-	bus_write(addr, cpu->a);
+	bus.write(addr, cpu->a);
 
 	DEBUG("Stored A register at 0x%04x", addr);
 
 	*cycles += 2;
 }
 
-static void exec_stx(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_stx(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	u16 addr;
 
@@ -876,14 +875,14 @@ static void exec_stx(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 
 	addr = ((u16)args[1] << 8) | args[0];
 
-	bus_write(addr, cpu->x);
+	bus.write(addr, cpu->x);
 
 	DEBUG("Stored X register at 0x%04x", addr);
 
 	*cycles += 2;
 }
 
-static void exec_sty(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_sty(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	u16 addr;
 
@@ -892,14 +891,14 @@ static void exec_sty(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 
 	addr = ((u16)args[1] << 8) | args[0];
 
-	bus_write(addr, cpu->y);
+	bus.write(addr, cpu->y);
 
 	DEBUG("Stored Y register at 0x%04x", addr);
 
 	*cycles += 2;
 }
 
-static void exec_tax(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_tax(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	cpu->x = alu_load(cpu->a, 0, &cpu->flags);
 
@@ -908,7 +907,7 @@ static void exec_tax(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	*cycles += 1;
 }
 
-static void exec_tay(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_tay(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	cpu->y = alu_load(cpu->a, 0, &cpu->flags);
 
@@ -917,7 +916,7 @@ static void exec_tay(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	*cycles += 1;
 }
 
-static void exec_tsx(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_tsx(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	cpu->x = alu_load(cpu->sp, 0, &cpu->flags);
 
@@ -926,7 +925,7 @@ static void exec_tsx(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	*cycles += 1;
 }
 
-static void exec_txa(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_txa(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	cpu->a = alu_load(cpu->x, 0, &cpu->flags);
 
@@ -935,7 +934,7 @@ static void exec_txa(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	*cycles += 1;
 }
 
-static void exec_txs(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_txs(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	cpu->sp = cpu->x;
 
@@ -944,7 +943,7 @@ static void exec_txs(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	*cycles += 1;
 }
 
-static void exec_tya(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cycles)
+static void exec_tya(struct simak65_cpustate *cpu, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	cpu->a = alu_load(cpu->y, 0, &cpu->flags);
 
@@ -953,6 +952,7 @@ static void exec_tya(cpustate_t *cpu, argtype_t argtype, u8 *args, cycles_t *cyc
 	*cycles += 1;
 }
 
+typedef void (*exec_func_t)(struct simak65_cpustate*, enum argtype, u8*, unsigned int*);
 static const exec_func_t exec_instr[] = {
 	exec_adc, exec_and, exec_asl, exec_bcc, exec_bcs, exec_beq, exec_bit, exec_bmi,
 	exec_bne, exec_bpl, exec_brk, exec_bvc, exec_bvs, exec_clc, exec_cld, exec_cli,
@@ -963,7 +963,7 @@ static const exec_func_t exec_instr[] = {
 	exec_stx, exec_sty, exec_tax, exec_tay, exec_tsx, exec_txa, exec_txs, exec_tya
 };
 
-void exec_execute(cpustate_t *cpu, opcode_t instruction, argtype_t argtype, u8 *args, cycles_t *cycles)
+void exec_execute(struct simak65_cpustate *cpu, enum opcode instruction, enum argtype argtype, u8 *args, unsigned int *cycles)
 {
 	if (instruction > sizeof(exec_instr) / sizeof(exec_instr[0])) {
 		FATAL("Tried to execute unknown instruction %u", instruction);
@@ -972,7 +972,7 @@ void exec_execute(cpustate_t *cpu, opcode_t instruction, argtype_t argtype, u8 *
 	exec_instr[instruction](cpu, argtype, args, cycles);
 }
 
-void exec_irq(cpustate_t *cpu, cycles_t *cycles)
+void exec_irq(struct simak65_cpustate *cpu, unsigned int *cycles)
 {
 	u8 flags;
 
@@ -982,19 +982,19 @@ void exec_irq(cpustate_t *cpu, cycles_t *cycles)
 	exec_push(cpu, cpu->pc & 0xff);
 
 	flags = cpu->flags;
-	flags |= flag_one;
-	flags &= ~flag_brk;
+	flags |= FLAG_ONE;
+	flags &= ~FLAG_BRK;
 	exec_push(cpu, flags);
 
-	cpu->pc = bus_read(IRQ_VECTOR);
-	cpu->pc |= (u16)bus_read(IRQ_VECTOR + 1) << 8;
+	cpu->pc = bus.read(IRQ_VECTOR);
+	cpu->pc |= (u16)bus.read(IRQ_VECTOR + 1) << 8;
 
-	cpu->flags |= flag_irqd;
+	cpu->flags |= FLAG_IRQD;
 
 	*cycles += 7;
 }
 
-void exec_nmi(cpustate_t *cpu, cycles_t *cycles)
+void exec_nmi(struct simak65_cpustate *cpu, unsigned int *cycles)
 {
 	u8 flags;
 
@@ -1004,30 +1004,30 @@ void exec_nmi(cpustate_t *cpu, cycles_t *cycles)
 	exec_push(cpu, cpu->pc & 0xff);
 
 	flags = cpu->flags;
-	flags |= flag_one;
-	flags &= ~flag_brk;
+	flags |= FLAG_ONE;
+	flags &= ~FLAG_BRK;
 	exec_push(cpu, flags);
 
-	cpu->pc = bus_read(NMI_VECTOR);
-	cpu->pc |= (u16)bus_read(NMI_VECTOR + 1) << 8;
+	cpu->pc = bus.read(NMI_VECTOR);
+	cpu->pc |= (u16)bus.read(NMI_VECTOR + 1) << 8;
 
-	cpu->flags |= flag_irqd;
+	cpu->flags |= FLAG_IRQD;
 
 	*cycles += 7;
 }
 
-void exec_rst(cpustate_t *cpu, cycles_t *cycles)
+void exec_rst(struct simak65_cpustate *cpu, unsigned int *cycles)
 {
 	DEBUG("Received RST");
 
 	cpu->a = 0;
 	cpu->x = 0;
 	cpu->y = 0;
-	cpu->flags = flag_one;
+	cpu->flags = FLAG_ONE;
 	cpu->sp = 0xff;
 
-	cpu->pc = bus_read(RST_VECTOR);
-	cpu->pc |= (u16)bus_read(RST_VECTOR + 1) << 8;
+	cpu->pc = bus.read(RST_VECTOR);
+	cpu->pc |= (u16)bus.read(RST_VECTOR + 1) << 8;
 
 	*cycles += 4;
 }

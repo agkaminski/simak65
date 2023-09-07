@@ -1,7 +1,7 @@
-#ifndef _ALU_H_
-#define _ALU_H_
+#ifndef SIMAK65_ALU_H_
+#define SIMAK65_ALU_H_
 
-#include "common/types.h"
+#include "types.h"
 
 void alu_flags(u8 result, u8 *flags, u8 mask);
 
@@ -33,4 +33,4 @@ u8 alu_cmp(u8 a, u8 b, u8 *flags);
 
 u8 alu_load(u8 a, u8 b, u8 *flags);
 
-#endif
+#endif /* SIMAK65_ALU_H_ */
