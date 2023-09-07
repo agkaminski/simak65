@@ -562,7 +562,7 @@ static void exec_lda(struct simak65_cpustate *cpu, enum argtype argtype, u8 *arg
 	u16 addr;
 	u8 arg;
 
-	if (enum argtype == arg_addr) {
+	if (argtype == arg_addr) {
 		addr = ((u16)args[1] << 8) | args[0];
 		arg = bus.read(addr);
 		*cycles += 2;

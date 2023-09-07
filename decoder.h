@@ -3,7 +3,7 @@
 
 #include "types.h"
 
-typedef enum opcode {
+enum opcode {
 	ADC, AND, ASL, BCC, BCS, BEQ, BIT, BMI,
 	BNE, BPL, BRK, BVC, BVS, CLC, CLD, CLI,
 	CLV, CMP, CPX, CPY, DEC, DEX, DEY, EOR,
@@ -13,14 +13,14 @@ typedef enum opcode {
 	STX, STY, TAX, TAY, TSX, TXA, TXS, TYA
 };
 
-typedef enum addrmode{
+enum addrmode{
 	mode_acc, mode_abs, mode_abx, mode_aby,
 	mode_imm, mode_imp, mode_ind, mode_inx,
 	mode_iny, mode_rel, mode_zp, mode_zpx,
 	mode_zpy
 };
 
-typedef struct opinfo {
+struct opinfo {
 	enum opcode opcode;
 	enum addrmode mode;
 };

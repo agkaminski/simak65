@@ -3,6 +3,7 @@
 
 #include "types.h"
 #include "decoder.h"
+#include "simak65.h"
 
 enum argtype { arg_none, arg_byte, arg_addr };
 

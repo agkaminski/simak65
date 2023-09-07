@@ -3,7 +3,7 @@
 
 struct simak65_bus bus;
 
-void bus_init(struct simak65_bus *ops)
+void bus_init(const struct simak65_bus *ops)
 {
 	bus = *ops;
 }
