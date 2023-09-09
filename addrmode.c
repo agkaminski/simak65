@@ -282,13 +282,3 @@ enum argtype addrmode_getArgs(struct simak65_cpustate *cpu, u8 *args, enum addrm
 	return arg_type;
 }
 
-
-
-
-
-
-
-
-
-
-

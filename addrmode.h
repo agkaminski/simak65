@@ -16,3 +16,4 @@ u8 addrmode_nextpc(struct simak65_cpustate *cpu);
 enum argtype addrmode_getArgs(struct simak65_cpustate *cpu, u8 *args, enum addrmode mode, unsigned int *cycles);
 
 #endif /* SIMAK65_ADDRMODE_H_ */
+

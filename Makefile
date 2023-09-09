@@ -4,7 +4,7 @@ CFLAGS := -Wall -Wextra -Werror -O2 -ansi -std=gnu99
 DEBUG := -DNDEBUG
 INSTALL_PATH := /usr/local
 
-LIB = simak65.a
+LIB = libsimak65.a
 HEADER = simak65.h
 OBJ = addrmode.o alu.o bus.o decoder.o exec.o simak65.o
 
