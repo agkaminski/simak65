@@ -13,48 +13,31 @@ It can be installed to `/usr/local/lib` via `sudo make install`, along with the 
 
 Library interface is available in `simak65.h` header.
 
-### struct simak65_bus
+### struct simak65_cpu
 
-This structure holds CPU bus read/write callback, that are need to provided by the library user.
+This structure holds the whole CPU state and callbacks to the bus operations. Fields bus.read() and
+bus.write() has to be implemented and populated by the user.
 
-### struct simak65_cpustate
-
-This structure holds internal CPU state. It is stored by the library user and needs to be passed
-to the library functions.
-
-### void simak65_step(struct simak65_cpustate *cpu, unsigned int *cycles)
+### void simak65_step(struct simak65_cpu *cpu)
 
 Execute the next instruction.
-- cpu - cpu state,
-- cycles - optional (can be NULL), number of cycles passed for the execution of the instruction
-is added to this variable.
 
-### void simak65_rst(struct simak65_cpustate *cpu, unsigned int *cycles)
+### void simak65_rst(struct simak65_cpu)
 
 Perform the CPU reset. This operation must be performed pefored before executing first instruction.
-- cpu - cpu state,
-- cycles - optional (can be NULL), number of cycles passed for the execution of the instruction
-is added to this variable.
 
-### void simak65_nmi(struct simak65_cpustate *cpu, unsigned int *cycles)
+### void simak65_nmi(struct simak65_cpu)
 
 Execute the non-maskable interrupt.
-- cpu - cpu state,
-- cycles - optional (can be NULL), number of cycles passed for the execution of the instruction
-is added to this variable.
 
-### void simak65_irq(struct simak65_cpustate *cpu, unsigned int *cycles)
+### void simak65_irq(struct simak65_cpu)
 
 Execute the interrupt.
-- cpu - cpu state,
-- cycles - optional (can be NULL), number of cycles passed for the execution of the instruction
-is added to this variable.
 
-### void simak65_init(struct simak65_cpustate *cpu, const struct simak65_bus *ops)
+### void simak65_init(struct simak65_cpu *cpu)
 
-Initialize the library and the cpu state.
-- cpu - cpu state,
-- ops - CPU memory bus callbacks.
+Initialize the library and the cpu state. The bus substructure of the CPU state has to be populated
+by the user.
 
 ## License
 
