@@ -6,7 +6,7 @@ INSTALL_PATH := /usr/local
 
 LIB = libsimak65.a
 HEADER = simak65.h
-OBJ = addrmode.o alu.o bus.o decoder.o exec.o simak65.o
+OBJ = addrmode.o alu.o decoder.o exec.o simak65.o
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS) $(VERSION) $(DEBUG) -I.

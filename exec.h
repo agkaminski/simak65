@@ -9,12 +9,12 @@
 #include "decoder.h"
 #include "addrmode.h"
 
-void exec_execute(struct simak65_cpustate *cpu, enum opcode instruction, enum argtype argtype, u8 *args, unsigned int *cycles);
+void exec_execute(struct simak65_cpu *cpu, enum opcode instruction, enum argtype argtype, u8 *args);
 
-void exec_irq(struct simak65_cpustate *cpu, unsigned int *cycles);
+void exec_irq(struct simak65_cpu *cpu);
 
-void exec_nmi(struct simak65_cpustate *cpu, unsigned int *cycles);
+void exec_nmi(struct simak65_cpu *cpu);
 
-void exec_rst(struct simak65_cpustate *cpu, unsigned int *cycles);
+void exec_rst(struct simak65_cpu *cpu);
 
 #endif /* SIMAK65_EXEC_H_ */
